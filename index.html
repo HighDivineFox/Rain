@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rain</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 20%, #26384f 0%, #111923 45%, #070b10 100%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .caption {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      transform: translateX(-50%);
+      color: rgba(230, 242, 255, 0.72);
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      user-select: none;
+      pointer-events: none;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="rain" aria-label="Calming animated rain simulation"></canvas>
+  <div class="caption">calm rain</div>
+
+  <script>
+    const canvas = document.getElementById('rain');
+    const ctx = canvas.getContext('2d');
+
+    let width = 0;
+    let height = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let drops = [];
+    let ripples = [];
+    let mist = [];
+
+    const random = (min, max) => Math.random() * (max - min) + min;
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const dropCount = Math.floor((width * height) / 5500);
+      drops = Array.from({ length: dropCount }, createDrop);
+      mist = Array.from({ length: Math.max(18, Math.floor(width / 55)) }, createMist);
+    }
+
+    function createDrop() {
+      const depth = random(0.35, 1);
+      return {
+        x: random(-width * 0.1, width * 1.1),
+        y: random(-height, height),
+        length: random(12, 34) * depth,
+        speed: random(280, 620) * depth,
+        drift: random(-24, -8) * depth,
+        alpha: random(0.16, 0.42) * depth,
+        width: random(0.6, 1.3) * depth
+      };
+    }
+
+    function createMist() {
+      return {
+        x: random(0, width),
+        y: random(height * 0.58, height * 0.98),
+        radius: random(90, 230),
+        speed: random(4, 14),
+        alpha: random(0.012, 0.035)
+      };
+    }
+
+    function drawBackground(time) {
+      const pulse = 0.04 + Math.sin(time * 0.00018) * 0.015;
+      const gradient = ctx.createRadialGradient(width * 0.5, height * 0.18, 0, width * 0.5, height * 0.22, Math.max(width, height));
+      gradient.addColorStop(0, `rgba(49, 74, 104, ${0.88 + pulse})`);
+      gradient.addColorStop(0.42, 'rgba(17, 25, 35, 0.96)');
+      gradient.addColorStop(1, 'rgba(5, 8, 12, 1)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    function drawMist(delta) {
+      for (const cloud of mist) {
+        cloud.x += cloud.speed * delta;
+        if (cloud.x - cloud.radius > width) {
+          cloud.x = -cloud.radius;
+          cloud.y = random(height * 0.58, height * 0.98);
+        }
+
+        const gradient = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, cloud.radius);
+        gradient.addColorStop(0, `rgba(180, 210, 230, ${cloud.alpha})`);
+        gradient.addColorStop(1, 'rgba(180, 210, 230, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawDrops(delta) {
+      ctx.lineCap = 'round';
+
+      for (const drop of drops) {
+        drop.x += drop.drift * delta;
+        drop.y += drop.speed * delta;
+
+        if (drop.y > height + drop.length) {
+          if (Math.random() < 0.55) {
+            ripples.push({
+              x: drop.x,
+              y: random(height * 0.68, height * 0.98),
+              radius: 1,
+              alpha: 0.18,
+              growth: random(18, 42)
+            });
+          }
+          Object.assign(drop, createDrop(), { y: random(-120, -20) });
+        }
+
+        const gradient = ctx.createLinearGradient(drop.x, drop.y - drop.length, drop.x + drop.drift * 0.04, drop.y);
+        gradient.addColorStop(0, 'rgba(205, 226, 242, 0)');
+        gradient.addColorStop(0.45, `rgba(205, 226, 242, ${drop.alpha})`);
+        gradient.addColorStop(1, 'rgba(205, 226, 242, 0)');
+
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = drop.width;
+        ctx.beginPath();
+        ctx.moveTo(drop.x, drop.y - drop.length);
+        ctx.lineTo(drop.x + drop.drift * 0.055, drop.y);
+        ctx.stroke();
+      }
+    }
+
+    function drawRipples(delta) {
+      for (let i = ripples.length - 1; i >= 0; i--) {
+        const ripple = ripples[i];
+        ripple.radius += ripple.growth * delta;
+        ripple.alpha -= 0.12 * delta;
+
+        if (ripple.alpha <= 0) {
+          ripples.splice(i, 1);
+          continue;
+        }
+
+        ctx.strokeStyle = `rgba(185, 210, 230, ${ripple.alpha})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(ripple.x, ripple.y, ripple.radius * 1.8, ripple.radius * 0.45, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    function drawWindowGlow(time) {
+      const shimmer = 0.06 + Math.sin(time * 0.0005) * 0.025;
+      const glow = ctx.createLinearGradient(0, 0, 0, height);
+      glow.addColorStop(0, `rgba(170, 205, 235, ${shimmer})`);
+      glow.addColorStop(0.5, 'rgba(170, 205, 235, 0.015)');
+      glow.addColorStop(1, 'rgba(170, 205, 235, 0.03)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    let last = performance.now();
+    function animate(now) {
+      const delta = Math.min((now - last) / 1000, 0.033);
+      last = now;
+
+      drawBackground(now);
+      drawWindowGlow(now);
+      drawMist(delta);
+      drawDrops(delta);
+      drawRipples(delta);
+
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', resize, { passive: true });
+    resize();
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
