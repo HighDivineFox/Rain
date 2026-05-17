@@ -54,7 +54,7 @@
     let specialCooldown = 8;
 
     const random = (min, max) => Math.random() * (max - min) + min;
-    const waterYAt = (x) => height * 0.72 + Math.sin(x * 0.006) * 10;
+    const landingY = () => random(height * 0.66, height * 0.98);
 
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -73,17 +73,17 @@
 
     function createDrop() {
       const depth = random(0.35, 1);
-      const x = random(-width * 0.1, width * 1.1);
+      const impactY = landingY();
       return {
-        x,
-        y: random(-height, height * 0.7),
+        x: random(-width * 0.1, width * 1.1),
+        y: random(-height, impactY - 20),
         length: random(12, 34) * depth,
         speed: random(280, 620) * depth,
         drift: random(-24, -8) * depth,
         alpha: random(0.16, 0.42) * depth,
         width: random(0.6, 1.3) * depth,
         depth,
-        impactY: waterYAt(x)
+        impactY
       };
     }
 
@@ -121,11 +121,10 @@
 
       // Roughly once every few minutes on average, a single golden rain drop appears.
       if (Math.random() < delta / 140) {
-        const x = random(width * 0.15, width * 0.85);
         special = {
-          x,
+          x: random(width * 0.15, width * 0.85),
           y: -80,
-          impactY: waterYAt(x),
+          impactY: landingY(),
           speed: random(190, 260),
           drift: random(-6, 6),
           length: 42,
@@ -145,21 +144,6 @@
       gradient.addColorStop(1, 'rgba(5, 8, 12, 1)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, width, height);
-    }
-
-    function drawWaterSurface(time) {
-      ctx.save();
-      ctx.globalAlpha = 0.22;
-      ctx.strokeStyle = 'rgba(190, 220, 240, 0.24)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let x = -20; x <= width + 20; x += 18) {
-        const y = waterYAt(x) + Math.sin(x * 0.018 + time * 0.001) * 2;
-        if (x === -20) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      ctx.restore();
     }
 
     function drawMist(delta) {
@@ -188,7 +172,6 @@
         const previousX = drop.x;
         drop.x += drop.drift * delta;
         drop.y += drop.speed * delta;
-        drop.impactY = waterYAt(drop.x);
 
         if (previousY < drop.impactY && drop.y >= drop.impactY) {
           const t = (drop.impactY - previousY) / Math.max(drop.y - previousY, 0.001);
@@ -243,7 +226,6 @@
         const previousY = special.y;
         special.x += special.drift * delta;
         special.y += special.speed * delta;
-        special.impactY = waterYAt(special.x);
 
         const trail = ctx.createLinearGradient(special.x, special.y - special.length, special.x, special.y);
         trail.addColorStop(0, 'rgba(255, 231, 158, 0)');
@@ -322,7 +304,6 @@
       drawBackground(now);
       drawWindowGlow(now);
       drawMist(delta);
-      drawWaterSurface(now);
       drawDrops(delta);
       drawSpecial(delta);
       drawRipples(delta);
