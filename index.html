@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Rain</title>
   <style>
     html, body {
@@ -21,21 +21,32 @@
       text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
     }
     .controls {
-      position: fixed; top: 20px; right: 20px; z-index: 2;
+      position: fixed; top: 20px; right: 20px; z-index: 20;
       display: grid; gap: 8px; width: min(260px, calc(100vw - 40px));
-      padding: 14px 16px; border: 1px solid rgba(210, 230, 245, 0.16);
-      border-radius: 18px; color: rgba(230, 242, 255, 0.82);
-      background: rgba(8, 13, 20, 0.38); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
+      padding: 14px 16px; border: 1px solid rgba(210, 230, 245, 0.22);
+      border-radius: 18px; color: rgba(230, 242, 255, 0.9);
+      background: rgba(8, 13, 20, 0.58); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
       backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     }
     .controls label {
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
       font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; user-select: none;
     }
-    .controls output { min-width: 44px; text-align: right; color: rgba(230, 242, 255, 0.58); font-variant-numeric: tabular-nums; }
-    input[type="range"] { width: 100%; accent-color: #b8d9f2; cursor: pointer; }
+    .controls output { min-width: 44px; text-align: right; color: rgba(230, 242, 255, 0.68); font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; accent-color: #b8d9f2; cursor: pointer; min-height: 28px; }
     @media (max-width: 640px) {
-      .controls { top: auto; right: 14px; left: 14px; bottom: 62px; width: auto; }
+      .controls {
+        top: calc(env(safe-area-inset-top, 0px) + 12px);
+        right: 12px;
+        left: 12px;
+        bottom: auto;
+        width: auto;
+        padding: 14px 16px 16px;
+        background: rgba(8, 13, 20, 0.76);
+        border-color: rgba(210, 230, 245, 0.32);
+      }
+      .controls label { font-size: 12px; }
+      input[type="range"] { min-height: 36px; }
     }
   </style>
 </head>
