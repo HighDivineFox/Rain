@@ -13,48 +13,71 @@
       background: radial-gradient(circle at 50% 20%, #26384f 0%, #111923 45%, #070b10 100%);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
-
+    canvas { display: block; width: 100vw; height: 100vh; }
     .caption {
-      position: fixed;
-      left: 50%;
-      bottom: 28px;
-      transform: translateX(-50%);
-      color: rgba(230, 242, 255, 0.72);
-      font-size: 14px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      user-select: none;
-      pointer-events: none;
+      position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+      color: rgba(230, 242, 255, 0.72); font-size: 14px; letter-spacing: 0.08em;
+      text-transform: uppercase; user-select: none; pointer-events: none;
       text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+    }
+    .controls {
+      position: fixed; top: 20px; right: 20px; z-index: 2;
+      display: grid; gap: 8px; width: min(260px, calc(100vw - 40px));
+      padding: 14px 16px; border: 1px solid rgba(210, 230, 245, 0.16);
+      border-radius: 18px; color: rgba(230, 242, 255, 0.82);
+      background: rgba(8, 13, 20, 0.38); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.24);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .controls label {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; user-select: none;
+    }
+    .controls output { min-width: 44px; text-align: right; color: rgba(230, 242, 255, 0.58); font-variant-numeric: tabular-nums; }
+    input[type="range"] { width: 100%; accent-color: #b8d9f2; cursor: pointer; }
+    @media (max-width: 640px) {
+      .controls { top: auto; right: 14px; left: 14px; bottom: 62px; width: auto; }
     }
   </style>
 </head>
 <body>
   <canvas id="rain" aria-label="Calming animated rain simulation"></canvas>
+  <div class="controls" aria-label="Rain controls">
+    <label for="intensity">Rain intensity <output id="intensityValue">60%</output></label>
+    <input id="intensity" type="range" min="10" max="140" value="60" step="1" aria-label="Rain intensity" />
+  </div>
   <div class="caption">calm rain</div>
 
   <script>
     const canvas = document.getElementById('rain');
     const ctx = canvas.getContext('2d');
+    const slider = document.getElementById('intensity');
+    const sliderValue = document.getElementById('intensityValue');
 
-    let width = 0;
-    let height = 0;
-    let dpr = Math.min(window.devicePixelRatio || 1, 2);
-    let drops = [];
-    let ripples = [];
-    let mist = [];
-    let fireflies = [];
-    let special = null;
-    let specialCooldown = 8;
+    let width = 0, height = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let drops = [], ripples = [], mist = [], sparks = [];
+    let special = null, specialCooldown = 8;
+    let rainIntensity = Number(slider.value) / 100;
 
     const random = (min, max) => Math.random() * (max - min) + min;
     const landingY = () => random(height * 0.66, height * 0.98);
+    const baseDropCount = () => Math.max(16, Math.floor((width * height) / 5500));
+    const targetDropCount = () => Math.max(8, Math.floor(baseDropCount() * rainIntensity));
+
+    function updateSliderLabel() {
+      sliderValue.textContent = `${Math.round(rainIntensity * 100)}%`;
+    }
+
+    function reconcileDropCount() {
+      const target = targetDropCount();
+      while (drops.length < target) drops.push(createDrop());
+      if (drops.length > target) drops.length = target;
+    }
+
+    function setIntensity(value) {
+      rainIntensity = Number(value) / 100;
+      updateSliderLabel();
+      reconcileDropCount();
+    }
 
     function resize() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -65,9 +88,7 @@
       canvas.style.width = width + 'px';
       canvas.style.height = height + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      const dropCount = Math.floor((width * height) / 5500);
-      drops = Array.from({ length: dropCount }, createDrop);
+      drops = Array.from({ length: targetDropCount() }, createDrop);
       mist = Array.from({ length: Math.max(18, Math.floor(width / 55)) }, createMist);
     }
 
@@ -81,15 +102,14 @@
         speed: random(280, 620) * depth,
         drift: random(-24, -8) * depth,
         alpha: random(0.16, 0.42) * depth,
-        width: random(0.6, 1.3) * depth,
+        lineWidth: random(0.6, 1.3) * depth,
         depth,
         impactY
       };
     }
 
-    function resetDrop(drop, startAbove = true) {
-      const next = createDrop();
-      Object.assign(drop, next, { y: startAbove ? random(-160, -20) : next.y });
+    function resetDrop(drop) {
+      Object.assign(drop, createDrop(), { y: random(-160, -20) });
     }
 
     function createMist() {
@@ -104,8 +124,7 @@
 
     function createRipple(x, y, strength = 1, warm = false) {
       ripples.push({
-        x,
-        y,
+        x, y,
         radius: 1,
         alpha: warm ? 0.3 : 0.18,
         growth: random(18, 42) * strength,
@@ -118,8 +137,6 @@
       if (special) return;
       specialCooldown -= delta;
       if (specialCooldown > 0) return;
-
-      // Roughly once every few minutes on average, a single golden rain drop appears.
       if (Math.random() < delta / 140) {
         special = {
           x: random(width * 0.15, width * 0.85),
@@ -129,8 +146,7 @@
           drift: random(-6, 6),
           length: 42,
           phase: 'falling',
-          age: 0,
-          glow: 0
+          age: 0
         };
         specialCooldown = random(80, 180);
       }
@@ -153,7 +169,6 @@
           cloud.x = -cloud.radius;
           cloud.y = random(height * 0.58, height * 0.98);
         }
-
         const gradient = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, cloud.radius);
         gradient.addColorStop(0, `rgba(180, 210, 230, ${cloud.alpha})`);
         gradient.addColorStop(1, 'rgba(180, 210, 230, 0)');
@@ -166,7 +181,6 @@
 
     function drawDrops(delta) {
       ctx.lineCap = 'round';
-
       for (const drop of drops) {
         const previousY = drop.y;
         const previousX = drop.x;
@@ -185,9 +199,8 @@
         gradient.addColorStop(0, 'rgba(205, 226, 242, 0)');
         gradient.addColorStop(0.45, `rgba(205, 226, 242, ${drop.alpha})`);
         gradient.addColorStop(1, 'rgba(205, 226, 242, 0)');
-
         ctx.strokeStyle = gradient;
-        ctx.lineWidth = drop.width;
+        ctx.lineWidth = drop.lineWidth;
         ctx.beginPath();
         ctx.moveTo(drop.x, drop.y - drop.length);
         ctx.lineTo(drop.x + drop.drift * 0.055, drop.y);
@@ -200,15 +213,11 @@
         const ripple = ripples[i];
         ripple.radius += ripple.growth * delta;
         ripple.alpha -= (ripple.warm ? 0.07 : 0.12) * delta;
-
         if (ripple.alpha <= 0) {
           ripples.splice(i, 1);
           continue;
         }
-
-        ctx.strokeStyle = ripple.warm
-          ? `rgba(255, 219, 139, ${ripple.alpha})`
-          : `rgba(185, 210, 230, ${ripple.alpha})`;
+        ctx.strokeStyle = ripple.warm ? `rgba(255, 219, 139, ${ripple.alpha})` : `rgba(185, 210, 230, ${ripple.alpha})`;
         ctx.lineWidth = ripple.warm ? 1.4 : 1;
         ctx.beginPath();
         ctx.ellipse(ripple.x, ripple.y, ripple.radius * ripple.stretch, ripple.radius * 0.45, 0, 0, Math.PI * 2);
@@ -219,14 +228,12 @@
     function drawSpecial(delta) {
       maybeStartSpecial(delta);
       if (!special) return;
-
       special.age += delta;
 
       if (special.phase === 'falling') {
         const previousY = special.y;
         special.x += special.drift * delta;
         special.y += special.speed * delta;
-
         const trail = ctx.createLinearGradient(special.x, special.y - special.length, special.x, special.y);
         trail.addColorStop(0, 'rgba(255, 231, 158, 0)');
         trail.addColorStop(0.55, 'rgba(255, 231, 158, 0.9)');
@@ -243,7 +250,7 @@
           special.age = 0;
           special.y = special.impactY;
           for (let i = 0; i < 5; i++) createRipple(special.x, special.y, 1.1 + i * 0.34, true);
-          fireflies = Array.from({ length: 18 }, () => ({
+          sparks = Array.from({ length: 18 }, () => ({
             x: special.x,
             y: special.y,
             vx: random(-24, 24),
@@ -253,36 +260,37 @@
             size: random(1.3, 2.8)
           }));
         }
-      } else {
-        const life = 5.5;
-        const fade = Math.max(0, 1 - special.age / life);
-        const glowRadius = 70 + special.age * 22;
-        const glow = ctx.createRadialGradient(special.x, special.y, 0, special.x, special.y, glowRadius);
-        glow.addColorStop(0, `rgba(255, 224, 150, ${0.22 * fade})`);
-        glow.addColorStop(1, 'rgba(255, 224, 150, 0)');
-        ctx.fillStyle = glow;
+        return;
+      }
+
+      const life = 5.5;
+      const fade = Math.max(0, 1 - special.age / life);
+      const glowRadius = 70 + special.age * 22;
+      const glow = ctx.createRadialGradient(special.x, special.y, 0, special.x, special.y, glowRadius);
+      glow.addColorStop(0, `rgba(255, 224, 150, ${0.22 * fade})`);
+      glow.addColorStop(1, 'rgba(255, 224, 150, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(special.x, special.y, glowRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      for (let i = sparks.length - 1; i >= 0; i--) {
+        const spark = sparks[i];
+        spark.age += delta;
+        spark.x += spark.vx * delta;
+        spark.y += spark.vy * delta;
+        spark.vy += 9 * delta;
+        const alpha = Math.max(0, 1 - spark.age / spark.life) * 0.75;
+        ctx.fillStyle = `rgba(255, 230, 150, ${alpha})`;
         ctx.beginPath();
-        ctx.arc(special.x, special.y, glowRadius, 0, Math.PI * 2);
+        ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2);
         ctx.fill();
+        if (spark.age >= spark.life) sparks.splice(i, 1);
+      }
 
-        for (let i = fireflies.length - 1; i >= 0; i--) {
-          const spark = fireflies[i];
-          spark.age += delta;
-          spark.x += spark.vx * delta;
-          spark.y += spark.vy * delta;
-          spark.vy += 9 * delta;
-          const a = Math.max(0, 1 - spark.age / spark.life) * 0.75;
-          ctx.fillStyle = `rgba(255, 230, 150, ${a})`;
-          ctx.beginPath();
-          ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2);
-          ctx.fill();
-          if (spark.age >= spark.life) fireflies.splice(i, 1);
-        }
-
-        if (special.age >= life) {
-          special = null;
-          fireflies = [];
-        }
+      if (special.age >= life) {
+        special = null;
+        sparks = [];
       }
     }
 
@@ -300,18 +308,18 @@
     function animate(now) {
       const delta = Math.min((now - last) / 1000, 0.033);
       last = now;
-
       drawBackground(now);
       drawWindowGlow(now);
       drawMist(delta);
       drawDrops(delta);
       drawSpecial(delta);
       drawRipples(delta);
-
       requestAnimationFrame(animate);
     }
 
+    slider.addEventListener('input', (event) => setIntensity(event.target.value));
     window.addEventListener('resize', resize, { passive: true });
+    updateSliderLabel();
     resize();
     requestAnimationFrame(animate);
   </script>
