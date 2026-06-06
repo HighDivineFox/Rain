@@ -8,18 +8,21 @@
     html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: radial-gradient(circle at 50% 20%, #26384f 0%, #111923 45%, #070b10 100%); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     canvas { display: block; width: 100vw; height: 100vh; }
     .panel { position: fixed; z-index: 20; color: rgba(235, 246, 255, 0.92); background: rgba(8, 13, 20, 0.72); border: 1px solid rgba(210, 230, 245, 0.22); border-radius: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.32); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-    .stats { top: 18px; left: 18px; padding: 14px 16px; min-width: 190px; }
+    .stats { top: 18px; left: 18px; padding: 14px 16px; min-width: 210px; }
     .stats h1 { margin: 0 0 8px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
     .stat { display: flex; justify-content: space-between; gap: 16px; font-size: 14px; line-height: 1.7; }
     .value { font-variant-numeric: tabular-nums; color: rgba(210, 235, 250, .74); }
-    .shop { right: 18px; top: 18px; width: min(330px, calc(100vw - 36px)); padding: 14px; display: grid; gap: 10px; }
+    .shop { right: 18px; top: 18px; width: min(340px, calc(100vw - 36px)); padding: 14px; display: grid; gap: 10px; }
     .shop-title { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: rgba(235,246,255,.78); }
-    .upgrade { border: 1px solid rgba(210,230,245,.14); border-radius: 14px; padding: 10px 12px; background: rgba(255,255,255,.045); color: rgba(235,246,255,.92); cursor: pointer; text-align: left; }
+    .upgrade, .utility { border: 1px solid rgba(210,230,245,.14); border-radius: 14px; padding: 10px 12px; background: rgba(255,255,255,.045); color: rgba(235,246,255,.92); cursor: pointer; text-align: left; font: inherit; }
     .upgrade:disabled { opacity: .42; cursor: not-allowed; }
     .upgrade strong { display: block; font-size: 14px; margin-bottom: 3px; }
     .upgrade span { display: block; font-size: 12px; color: rgba(235,246,255,.62); line-height: 1.35; }
+    .utility { font-size: 12px; text-align: center; color: rgba(235,246,255,.66); padding: 8px 10px; }
     .caption { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); color: rgba(230,242,255,.72); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; user-select: none; pointer-events: none; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
-    @media (max-width: 720px) { .stats { top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; right: 12px; min-width: 0; } .shop { top: auto; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: auto; max-height: 40vh; overflow: auto; } .caption { display: none; } }
+    .toast { position: fixed; z-index: 30; left: 50%; top: 18px; transform: translateX(-50%); max-width: min(460px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 16px; background: rgba(10, 18, 28, .82); border: 1px solid rgba(220, 238, 255, .22); color: rgba(235,246,255,.9); box-shadow: 0 14px 42px rgba(0,0,0,.34); opacity: 0; pointer-events: none; transition: opacity .6s ease; }
+    .toast.visible { opacity: 1; }
+    @media (max-width: 720px) { .stats { top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; right: 12px; min-width: 0; } .shop { top: auto; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: auto; max-height: 40vh; overflow: auto; } .caption { display: none; } .toast { top: calc(env(safe-area-inset-top, 0px) + 118px); } }
   </style>
 </head>
 <body>
@@ -30,24 +33,35 @@
     <div class="stat"><span>Water</span><span class="value" id="water">0</span></div>
     <div class="stat"><span>Per second</span><span class="value" id="rate">0/s</span></div>
     <div class="stat"><span>Garden</span><span class="value" id="stage">Seedbed</span></div>
+    <div class="stat"><span>Saved</span><span class="value" id="saved">now</span></div>
   </section>
 
   <section class="panel shop" aria-label="Garden upgrades">
     <div class="shop-title"><strong>Upgrades</strong><span id="hint">Rain feeds the garden</span></div>
     <button class="upgrade" data-upgrade="clouds"><strong>More Clouds</strong><span>Adds more raindrops. Cost: <b id="cloudsCost">25</b> water.</span></button>
     <button class="upgrade" data-upgrade="ripples"><strong>Deeper Ripples</strong><span>Each landing gives more water. Cost: <b id="ripplesCost">60</b> water.</span></button>
-    <button class="upgrade" data-upgrade="mist"><strong>Mist Catcher</strong><span>Generates passive water. Cost: <b id="mistCost">120</b> water.</span></button>
+    <button class="upgrade" data-upgrade="mist"><strong>Mist Catcher</strong><span>Generates passive and offline water. Cost: <b id="mistCost">120</b> water.</span></button>
+    <button class="utility" id="reset">Reset garden</button>
   </section>
 
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="caption">calm rain garden</div>
 
   <script>
     const canvas = document.getElementById('rain');
     const ctx = canvas.getContext('2d');
+    const SAVE_KEY = 'rainGardenSave:v1';
+    const OFFLINE_CAP_SECONDS = 8 * 60 * 60;
+    const AUTOSAVE_MS = 10000;
+
     const ui = {
       water: document.getElementById('water'),
       rate: document.getElementById('rate'),
       stage: document.getElementById('stage'),
+      saved: document.getElementById('saved'),
+      hint: document.getElementById('hint'),
+      toast: document.getElementById('toast'),
+      reset: document.getElementById('reset'),
       buttons: [...document.querySelectorAll('.upgrade')],
       costs: {
         clouds: document.getElementById('cloudsCost'),
@@ -58,29 +72,42 @@
 
     let width = 0, height = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
     let drops = [], ripples = [], mist = [], sparks = [];
-    let special = null, specialCooldown = 8, recentWater = [];
+    let special = null, specialCooldown = 16, recentWater = [];
+    let lastSavedAt = Date.now();
+    let lastAutoSaveAt = Date.now();
+    let toastTimer = null;
 
     const state = {
       water: 0,
-      upgrades: { clouds: 0, ripples: 0, mist: 0 }
+      lifetimeWater: 0,
+      upgrades: { clouds: 0, ripples: 0, mist: 0 },
+      lastSavedAt: Date.now()
     };
 
     const random = (min, max) => Math.random() * (max - min) + min;
     const landingY = () => random(height * 0.66, height * 0.98);
-    const format = n => n < 1000 ? Math.floor(n).toString() : n < 1e6 ? (n / 1000).toFixed(1) + 'k' : (n / 1e6).toFixed(1) + 'm';
+    const format = n => n < 1000 ? Math.floor(n).toString() : n < 1e6 ? (n / 1000).toFixed(1) + 'k' : n < 1e9 ? (n / 1e6).toFixed(1) + 'm' : (n / 1e9).toFixed(1) + 'b';
     const costs = {
-      clouds: () => Math.floor(25 * Math.pow(1.62, state.upgrades.clouds)),
-      ripples: () => Math.floor(60 * Math.pow(1.72, state.upgrades.ripples)),
-      mist: () => Math.floor(120 * Math.pow(1.85, state.upgrades.mist))
+      clouds: () => Math.floor(35 * Math.pow(1.68, state.upgrades.clouds)),
+      ripples: () => Math.floor(75 * Math.pow(1.74, state.upgrades.ripples)),
+      mist: () => Math.floor(140 * Math.pow(1.86, state.upgrades.mist))
     };
     const waterPerDrop = () => 1 + state.upgrades.ripples * 0.65;
-    const passivePerSecond = () => state.upgrades.mist * 0.35;
-    const baseDropCount = () => Math.max(14, Math.floor((width * height) / 8500));
-    const targetDropCount = () => Math.floor(baseDropCount() * (1 + state.upgrades.clouds * 0.22));
+    const passivePerSecond = () => state.upgrades.mist * 0.28;
+    const baseDropCount = () => Math.max(6, Math.floor((width * height) / 19000));
+    const targetDropCount = () => Math.floor(baseDropCount() * (1 + state.upgrades.clouds * 0.18));
 
-    function addWater(amount) {
+    function showToast(message, duration = 4800) {
+      ui.toast.textContent = message;
+      ui.toast.classList.add('visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => ui.toast.classList.remove('visible'), duration);
+    }
+
+    function addWater(amount, trackRate = true) {
       state.water += amount;
-      recentWater.push({ amount, time: performance.now() });
+      state.lifetimeWater += amount;
+      if (trackRate) recentWater.push({ amount, time: performance.now() });
     }
 
     function recentRate(now) {
@@ -89,17 +116,23 @@
     }
 
     function gardenStage() {
-      if (state.water >= 100000) return 'Firefly Grove';
-      if (state.water >= 10000) return 'Moon Pond';
-      if (state.water >= 1000) return 'Flowerbed';
-      if (state.water >= 100) return 'Mossy Ground';
+      if (state.lifetimeWater >= 100000) return 'Firefly Grove';
+      if (state.lifetimeWater >= 10000) return 'Moon Pond';
+      if (state.lifetimeWater >= 1000) return 'Flowerbed';
+      if (state.lifetimeWater >= 100) return 'Mossy Ground';
       return 'Seedbed';
+    }
+
+    function updateSavedLabel() {
+      const seconds = Math.max(0, Math.floor((Date.now() - lastSavedAt) / 1000));
+      ui.saved.textContent = seconds < 5 ? 'now' : `${seconds}s ago`;
     }
 
     function updateUI(now = performance.now()) {
       ui.water.textContent = format(state.water);
       ui.rate.textContent = format(recentRate(now)) + '/s';
       ui.stage.textContent = gardenStage();
+      updateSavedLabel();
       for (const button of ui.buttons) {
         const key = button.dataset.upgrade;
         const cost = costs[key]();
@@ -108,12 +141,67 @@
       }
     }
 
+    function saveGame() {
+      state.lastSavedAt = Date.now();
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      lastSavedAt = state.lastSavedAt;
+    }
+
+    function loadGame() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (!saved || typeof saved !== 'object') return;
+
+        state.water = Number.isFinite(saved.water) ? Math.max(0, saved.water) : 0;
+        state.lifetimeWater = Number.isFinite(saved.lifetimeWater) ? Math.max(state.water, saved.lifetimeWater) : state.water;
+        state.upgrades = {
+          clouds: Math.max(0, Number(saved.upgrades?.clouds) || 0),
+          ripples: Math.max(0, Number(saved.upgrades?.ripples) || 0),
+          mist: Math.max(0, Number(saved.upgrades?.mist) || 0)
+        };
+
+        const savedAt = Number(saved.lastSavedAt) || Date.now();
+        const elapsedSeconds = Math.min(OFFLINE_CAP_SECONDS, Math.max(0, (Date.now() - savedAt) / 1000));
+        const offlineWater = passivePerSecond() * elapsedSeconds;
+        if (offlineWater >= 1) {
+          addWater(offlineWater, false);
+          showToast(`While you were away, the garden gathered ${format(offlineWater)} water.`);
+        }
+        lastSavedAt = savedAt;
+      } catch (error) {
+        console.warn('Could not load save data:', error);
+        showToast('Save data could not be loaded, so a fresh garden was started.');
+      }
+    }
+
+    function maybeAutoSave(now) {
+      if (Date.now() - lastAutoSaveAt < AUTOSAVE_MS) return;
+      saveGame();
+      lastAutoSaveAt = Date.now();
+    }
+
     function buyUpgrade(key) {
       const cost = costs[key]();
       if (state.water < cost) return;
       state.water -= cost;
       state.upgrades[key] += 1;
       reconcileDropCount();
+      saveGame();
+      updateUI();
+    }
+
+    function resetGame() {
+      if (!confirm('Reset your rain garden progress?')) return;
+      state.water = 0;
+      state.lifetimeWater = 0;
+      state.upgrades = { clouds: 0, ripples: 0, mist: 0 };
+      recentWater = [];
+      localStorage.removeItem(SAVE_KEY);
+      reconcileDropCount();
+      saveGame();
+      showToast('The garden has been reset.');
       updateUI();
     }
 
@@ -130,26 +218,26 @@
       canvas.style.width = width + 'px'; canvas.style.height = height + 'px';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       drops = Array.from({ length: targetDropCount() }, createDrop);
-      mist = Array.from({ length: Math.max(18, Math.floor(width / 55)) }, createMist);
+      mist = Array.from({ length: Math.max(10, Math.floor(width / 90)) }, createMist);
     }
 
     function createDrop() {
       const depth = random(0.35, 1);
       const impactY = landingY();
-      return { x: random(-width * .1, width * 1.1), y: random(-height, impactY - 20), length: random(12, 34) * depth, speed: random(280, 620) * depth, drift: random(-24, -8) * depth, alpha: random(.16, .42) * depth, lineWidth: random(.6, 1.3) * depth, depth, impactY };
+      return { x: random(-width * .1, width * 1.1), y: random(-height, impactY - 20), length: random(12, 34) * depth, speed: random(230, 500) * depth, drift: random(-22, -7) * depth, alpha: random(.14, .36) * depth, lineWidth: random(.6, 1.2) * depth, depth, impactY };
     }
 
-    function resetDrop(drop) { Object.assign(drop, createDrop(), { y: random(-160, -20) }); }
-    function createMist() { return { x: random(0, width), y: random(height * .58, height * .98), radius: random(90, 230), speed: random(4, 14), alpha: random(.012, .035) }; }
+    function resetDrop(drop) { Object.assign(drop, createDrop(), { y: random(-260, -40) }); }
+    function createMist() { return { x: random(0, width), y: random(height * .58, height * .98), radius: random(90, 230), speed: random(3, 10), alpha: random(.01, .027) }; }
     function createRipple(x, y, strength = 1, warm = false) { ripples.push({ x, y, radius: 1, alpha: warm ? .3 : .18, growth: random(18, 42) * strength, stretch: random(1.45, 2.15), warm }); }
 
     function maybeStartSpecial(delta) {
       if (special) return;
       specialCooldown -= delta;
       if (specialCooldown > 0) return;
-      if (Math.random() < delta / 140) {
-        special = { x: random(width * .15, width * .85), y: -80, impactY: landingY(), speed: random(190, 260), drift: random(-6, 6), length: 42, phase: 'falling', age: 0 };
-        specialCooldown = random(80, 180);
+      if (Math.random() < delta / 170) {
+        special = { x: random(width * .15, width * .85), y: -80, impactY: landingY(), speed: random(170, 240), drift: random(-6, 6), length: 42, phase: 'falling', age: 0 };
+        specialCooldown = random(100, 210);
       }
     }
 
@@ -203,7 +291,7 @@
         trail.addColorStop(0, 'rgba(255, 231, 158, 0)'); trail.addColorStop(.55, 'rgba(255, 231, 158, .9)'); trail.addColorStop(1, 'rgba(255, 255, 220, .1)');
         ctx.strokeStyle = trail; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(special.x, special.y - special.length); ctx.lineTo(special.x + special.drift * .08, special.y); ctx.stroke();
         if (previousY < special.impactY && special.y >= special.impactY) {
-          addWater(waterPerDrop() * 120); special.phase = 'bloom'; special.age = 0; special.y = special.impactY;
+          addWater(waterPerDrop() * 90); special.phase = 'bloom'; special.age = 0; special.y = special.impactY;
           for (let i = 0; i < 5; i++) createRipple(special.x, special.y, 1.1 + i * .34, true);
           sparks = Array.from({ length: 18 }, () => ({ x: special.x, y: special.y, vx: random(-24, 24), vy: random(-52, -18), life: random(2.5, 4.8), age: 0, size: random(1.3, 2.8) }));
         }
@@ -226,13 +314,22 @@
     function animate(now) {
       const delta = Math.min((now - last) / 1000, .033); last = now;
       addWater(passivePerSecond() * delta);
-      drawBackground(now); drawWindowGlow(now); drawMist(delta); drawDrops(delta); drawSpecial(delta); drawRipples(delta); updateUI(now);
+      drawBackground(now); drawWindowGlow(now); drawMist(delta); drawDrops(delta); drawSpecial(delta); drawRipples(delta); updateUI(now); maybeAutoSave(now);
       requestAnimationFrame(animate);
     }
 
     ui.buttons.forEach(button => button.addEventListener('click', () => buyUpgrade(button.dataset.upgrade)));
+    ui.reset.addEventListener('click', resetGame);
     window.addEventListener('resize', resize, { passive: true });
-    resize(); updateUI(); requestAnimationFrame(animate);
+    window.addEventListener('pagehide', saveGame);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
+
+    loadGame();
+    resize();
+    reconcileDropCount();
+    updateUI();
+    saveGame();
+    requestAnimationFrame(animate);
   </script>
 </body>
 </html>
