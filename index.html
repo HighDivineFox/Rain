@@ -5,44 +5,303 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Rain Garden</title>
   <style>
-    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: radial-gradient(circle at 50% 20%, #26384f 0%, #111923 45%, #070b10 100%); font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    :root {
+      color-scheme: dark;
+      --glass: rgba(8, 13, 20, 0.72);
+      --glass-strong: rgba(8, 13, 20, 0.86);
+      --line: rgba(210, 230, 245, 0.2);
+      --text: rgba(235, 246, 255, 0.92);
+      --muted: rgba(235, 246, 255, 0.62);
+      --soft: rgba(210, 235, 250, 0.74);
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 20%, #26384f 0%, #111923 45%, #070b10 100%);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      touch-action: manipulation;
+    }
+
     canvas { display: block; width: 100vw; height: 100vh; }
-    .panel { position: fixed; z-index: 20; color: rgba(235, 246, 255, 0.92); background: rgba(8, 13, 20, 0.72); border: 1px solid rgba(210, 230, 245, 0.22); border-radius: 18px; box-shadow: 0 12px 40px rgba(0,0,0,.32); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-    .stats { top: 18px; left: 18px; padding: 14px 16px; min-width: 210px; }
-    .stats h1 { margin: 0 0 8px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
-    .stat { display: flex; justify-content: space-between; gap: 16px; font-size: 14px; line-height: 1.7; }
-    .value { font-variant-numeric: tabular-nums; color: rgba(210, 235, 250, .74); }
-    .shop { right: 18px; top: 18px; width: min(340px, calc(100vw - 36px)); padding: 14px; display: grid; gap: 10px; }
-    .shop-title { display:flex; justify-content:space-between; align-items:center; gap:12px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: rgba(235,246,255,.78); }
-    .upgrade, .utility { border: 1px solid rgba(210,230,245,.14); border-radius: 14px; padding: 10px 12px; background: rgba(255,255,255,.045); color: rgba(235,246,255,.92); cursor: pointer; text-align: left; font: inherit; }
-    .upgrade:disabled { opacity: .42; cursor: not-allowed; }
-    .upgrade strong { display: block; font-size: 14px; margin-bottom: 3px; }
-    .upgrade span { display: block; font-size: 12px; color: rgba(235,246,255,.62); line-height: 1.35; }
-    .utility { font-size: 12px; text-align: center; color: rgba(235,246,255,.66); padding: 8px 10px; }
-    .caption { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); color: rgba(230,242,255,.72); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; user-select: none; pointer-events: none; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
-    .toast { position: fixed; z-index: 30; left: 50%; top: 18px; transform: translateX(-50%); max-width: min(460px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 16px; background: rgba(10, 18, 28, .82); border: 1px solid rgba(220, 238, 255, .22); color: rgba(235,246,255,.9); box-shadow: 0 14px 42px rgba(0,0,0,.34); opacity: 0; pointer-events: none; transition: opacity .6s ease; }
+
+    .hud {
+      position: fixed;
+      z-index: 20;
+      top: calc(env(safe-area-inset-top, 0px) + 12px);
+      left: 12px;
+      right: 12px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      color: var(--text);
+      background: rgba(8, 13, 20, 0.54);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      pointer-events: auto;
+    }
+
+    .hud-title {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+    }
+
+    .hud-water {
+      display: block;
+      margin-top: 2px;
+      font-size: clamp(20px, 6vw, 30px);
+      line-height: 1;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hud-side {
+      text-align: right;
+      font-size: 12px;
+      color: var(--soft);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      z-index: 24;
+      left: 12px;
+      right: 12px;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      max-width: 560px;
+      margin: 0 auto;
+      pointer-events: auto;
+    }
+
+    .nav-button, .close-button, .utility, .upgrade {
+      font: inherit;
+      color: var(--text);
+      border: 1px solid var(--line);
+      background: rgba(8, 13, 20, 0.7);
+      cursor: pointer;
+    }
+
+    .nav-button {
+      min-height: 48px;
+      border-radius: 999px;
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    .nav-button[aria-expanded="true"] {
+      background: rgba(42, 68, 92, 0.82);
+      border-color: rgba(220, 238, 255, 0.34);
+    }
+
+    .sheet {
+      position: fixed;
+      z-index: 23;
+      left: 10px;
+      right: 10px;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 72px);
+      max-width: 560px;
+      max-height: min(58vh, 520px);
+      margin: 0 auto;
+      display: grid;
+      gap: 10px;
+      padding: 14px;
+      overflow: auto;
+      border: 1px solid rgba(210, 230, 245, 0.24);
+      border-radius: 24px;
+      color: var(--text);
+      background: var(--glass-strong);
+      box-shadow: 0 18px 56px rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transform: translateY(calc(100% + 92px));
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 220ms ease, opacity 220ms ease;
+    }
+
+    .sheet.open {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sheet-header {
+      position: sticky;
+      top: -14px;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: -14px -14px 0;
+      padding: 12px 14px;
+      background: rgba(8, 13, 20, 0.9);
+      border-bottom: 1px solid rgba(210, 230, 245, 0.12);
+    }
+
+    .sheet-title {
+      margin: 0;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .close-button {
+      width: 34px;
+      height: 34px;
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(210, 230, 245, 0.09);
+      font-size: 14px;
+    }
+
+    .stat:last-child { border-bottom: 0; }
+    .value { font-variant-numeric: tabular-nums; color: var(--soft); text-align: right; }
+
+    .upgrade, .utility {
+      width: 100%;
+      border-radius: 16px;
+      padding: 12px 13px;
+      text-align: left;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .upgrade:disabled { opacity: 0.42; cursor: not-allowed; }
+    .upgrade strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .upgrade span { display: block; font-size: 12px; color: var(--muted); line-height: 1.4; }
+    .utility { text-align: center; color: var(--muted); font-size: 13px; }
+
+    .toast {
+      position: fixed;
+      z-index: 30;
+      left: 50%;
+      top: calc(env(safe-area-inset-top, 0px) + 76px);
+      transform: translateX(-50%);
+      max-width: min(460px, calc(100vw - 32px));
+      padding: 12px 16px;
+      border-radius: 16px;
+      background: rgba(10, 18, 28, 0.86);
+      border: 1px solid rgba(220, 238, 255, 0.22);
+      color: var(--text);
+      box-shadow: 0 14px 42px rgba(0,0,0,.34);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .6s ease;
+    }
+
     .toast.visible { opacity: 1; }
-    @media (max-width: 720px) { .stats { top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; right: 12px; min-width: 0; } .shop { top: auto; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: auto; max-height: 40vh; overflow: auto; } .caption { display: none; } .toast { top: calc(env(safe-area-inset-top, 0px) + 118px); } }
+    .caption { display: none; }
+
+    @media (min-width: 820px) {
+      .hud {
+        top: 18px;
+        left: 18px;
+        right: auto;
+        width: 280px;
+        margin: 0;
+      }
+
+      .bottom-nav {
+        left: auto;
+        right: 18px;
+        bottom: 18px;
+        width: 320px;
+        margin: 0;
+      }
+
+      .sheet {
+        left: auto;
+        right: 18px;
+        bottom: 84px;
+        width: 360px;
+        max-height: min(68vh, 620px);
+        margin: 0;
+      }
+
+      .caption {
+        display: block;
+        position: fixed;
+        left: 50%;
+        bottom: 28px;
+        transform: translateX(-50%);
+        color: rgba(230,242,255,.72);
+        font-size: 14px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        user-select: none;
+        pointer-events: none;
+        text-shadow: 0 2px 12px rgba(0,0,0,.5);
+      }
+    }
   </style>
 </head>
 <body>
   <canvas id="rain" aria-label="Calm garden idle game"></canvas>
 
-  <section class="panel stats" aria-label="Garden stats">
-    <h1>Rain Garden</h1>
-    <div class="stat"><span>Water</span><span class="value" id="water">0</span></div>
-    <div class="stat"><span>Per second</span><span class="value" id="rate">0/s</span></div>
-    <div class="stat"><span>Garden</span><span class="value" id="stage">Seedbed</span></div>
+  <section class="hud" aria-label="Garden summary">
+    <div>
+      <span class="hud-title">Rain Garden</span>
+      <span class="hud-water" id="water">0</span>
+    </div>
+    <div class="hud-side">
+      <div id="rate">0/s</div>
+      <div id="stage">Seedbed</div>
+    </div>
+  </section>
+
+  <section class="sheet" id="statsPanel" aria-label="Garden stats" aria-hidden="true">
+    <div class="sheet-header">
+      <h1 class="sheet-title">Garden stats</h1>
+      <button class="close-button" data-close="statsPanel" aria-label="Close garden stats">×</button>
+    </div>
+    <div class="stat"><span>Water</span><span class="value" id="waterDetail">0</span></div>
+    <div class="stat"><span>Per second</span><span class="value" id="rateDetail">0/s</span></div>
+    <div class="stat"><span>Garden</span><span class="value" id="stageDetail">Seedbed</span></div>
     <div class="stat"><span>Saved</span><span class="value" id="saved">now</span></div>
   </section>
 
-  <section class="panel shop" aria-label="Garden upgrades">
-    <div class="shop-title"><strong>Upgrades</strong><span id="hint">Rain feeds the garden</span></div>
+  <section class="sheet" id="shopPanel" aria-label="Garden upgrades" aria-hidden="true">
+    <div class="sheet-header">
+      <h1 class="sheet-title">Upgrades</h1>
+      <button class="close-button" data-close="shopPanel" aria-label="Close upgrades">×</button>
+    </div>
     <button class="upgrade" data-upgrade="clouds"><strong>More Clouds</strong><span>Adds more raindrops. Cost: <b id="cloudsCost">25</b> water.</span></button>
     <button class="upgrade" data-upgrade="ripples"><strong>Deeper Ripples</strong><span>Each landing gives more water. Cost: <b id="ripplesCost">60</b> water.</span></button>
     <button class="upgrade" data-upgrade="mist"><strong>Mist Catcher</strong><span>Generates passive and offline water. Cost: <b id="mistCost">120</b> water.</span></button>
     <button class="utility" id="reset">Reset garden</button>
   </section>
+
+  <nav class="bottom-nav" aria-label="Game panels">
+    <button class="nav-button" data-panel="statsPanel" aria-expanded="false">Stats</button>
+    <button class="nav-button" data-panel="shopPanel" aria-expanded="false">Upgrades</button>
+  </nav>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="caption">calm rain garden</div>
@@ -56,12 +315,17 @@
 
     const ui = {
       water: document.getElementById('water'),
+      waterDetail: document.getElementById('waterDetail'),
       rate: document.getElementById('rate'),
+      rateDetail: document.getElementById('rateDetail'),
       stage: document.getElementById('stage'),
+      stageDetail: document.getElementById('stageDetail'),
       saved: document.getElementById('saved'),
-      hint: document.getElementById('hint'),
       toast: document.getElementById('toast'),
       reset: document.getElementById('reset'),
+      panelButtons: [...document.querySelectorAll('[data-panel]')],
+      panels: [...document.querySelectorAll('.sheet')],
+      closeButtons: [...document.querySelectorAll('[data-close]')],
       buttons: [...document.querySelectorAll('.upgrade')],
       costs: {
         clouds: document.getElementById('cloudsCost'),
@@ -97,6 +361,26 @@
     const baseDropCount = () => Math.max(6, Math.floor((width * height) / 19000));
     const targetDropCount = () => Math.floor(baseDropCount() * (1 + state.upgrades.clouds * 0.18));
 
+    function setOpenPanel(panelId) {
+      for (const panel of ui.panels) {
+        const open = panel.id === panelId && !panel.classList.contains('open');
+        panel.classList.toggle('open', open);
+        panel.setAttribute('aria-hidden', String(!open));
+      }
+      for (const button of ui.panelButtons) {
+        const expanded = document.getElementById(button.dataset.panel).classList.contains('open');
+        button.setAttribute('aria-expanded', String(expanded));
+      }
+    }
+
+    function closePanel(panelId) {
+      const panel = document.getElementById(panelId);
+      panel.classList.remove('open');
+      panel.setAttribute('aria-hidden', 'true');
+      const button = ui.panelButtons.find(item => item.dataset.panel === panelId);
+      if (button) button.setAttribute('aria-expanded', 'false');
+    }
+
     function showToast(message, duration = 4800) {
       ui.toast.textContent = message;
       ui.toast.classList.add('visible');
@@ -129,9 +413,15 @@
     }
 
     function updateUI(now = performance.now()) {
-      ui.water.textContent = format(state.water);
-      ui.rate.textContent = format(recentRate(now)) + '/s';
-      ui.stage.textContent = gardenStage();
+      const water = format(state.water);
+      const rate = format(recentRate(now)) + '/s';
+      const stage = gardenStage();
+      ui.water.textContent = water;
+      ui.waterDetail.textContent = water;
+      ui.rate.textContent = rate;
+      ui.rateDetail.textContent = rate;
+      ui.stage.textContent = stage;
+      ui.stageDetail.textContent = stage;
       updateSavedLabel();
       for (const button of ui.buttons) {
         const key = button.dataset.upgrade;
@@ -176,7 +466,7 @@
       }
     }
 
-    function maybeAutoSave(now) {
+    function maybeAutoSave() {
       if (Date.now() - lastAutoSaveAt < AUTOSAVE_MS) return;
       saveGame();
       lastAutoSaveAt = Date.now();
@@ -314,11 +604,13 @@
     function animate(now) {
       const delta = Math.min((now - last) / 1000, .033); last = now;
       addWater(passivePerSecond() * delta);
-      drawBackground(now); drawWindowGlow(now); drawMist(delta); drawDrops(delta); drawSpecial(delta); drawRipples(delta); updateUI(now); maybeAutoSave(now);
+      drawBackground(now); drawWindowGlow(now); drawMist(delta); drawDrops(delta); drawSpecial(delta); drawRipples(delta); updateUI(now); maybeAutoSave();
       requestAnimationFrame(animate);
     }
 
     ui.buttons.forEach(button => button.addEventListener('click', () => buyUpgrade(button.dataset.upgrade)));
+    ui.panelButtons.forEach(button => button.addEventListener('click', () => setOpenPanel(button.dataset.panel)));
+    ui.closeButtons.forEach(button => button.addEventListener('click', () => closePanel(button.dataset.close)));
     ui.reset.addEventListener('click', resetGame);
     window.addEventListener('resize', resize, { passive: true });
     window.addEventListener('pagehide', saveGame);
