@@ -1,4 +1,4 @@
-import { OFFLINE_CAP_SECONDS, SAVE_KEY, format, passivePerSecond } from './config.js';
+import { AUTOSAVE_MS, OFFLINE_CAP_SECONDS, SAVE_KEY, format, passivePerSecond } from './config.js';
 import { runtime, state } from './state.js';
 
 export function saveGame() {
@@ -39,7 +39,7 @@ export function loadGame(addWater, showToast) {
 }
 
 export function maybeAutoSave(now = Date.now()) {
-  if (now - runtime.lastAutoSaveAt < 10000) return;
+  if (now - runtime.lastAutoSaveAt < AUTOSAVE_MS) return;
   saveGame();
   runtime.lastAutoSaveAt = now;
 }
