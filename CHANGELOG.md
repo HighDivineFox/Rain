@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.1
+
+- Split `src/game.js` into focused modules for config, state, save, UI, rendering, and dev tools.
+- Kept `src/game.js` as the game-loop and startup coordinator.
+- Preserved the existing save key and gameplay behavior from v0.5.0.
+
 ## v0.5.0
 
 - Refactored the game out of a single HTML file.
