@@ -1,3 +1,0 @@
-v0.4.2
-- Added upgrade-linked garden visuals.
-- Added milestone unlock toasts.
