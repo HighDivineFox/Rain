@@ -10,11 +10,13 @@
     canvas { display: block; width: 100vw; height: 100vh; }
     .version { position: fixed; z-index: 18; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 12px; color: rgba(235, 246, 255, 0.36); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; user-select: none; pointer-events: none; text-shadow: 0 2px 10px rgba(0,0,0,.4); }
     .hud { position: fixed; z-index: 20; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 12px; right: 12px; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; max-width: 560px; margin: 0 auto; padding: 10px 12px; border: 1px solid var(--line); border-radius: 18px; color: var(--text); background: rgba(8, 13, 20, 0.54); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); pointer-events: auto; }
+    .hud.pulse { animation: pulseHud .75s ease; }
+    @keyframes pulseHud { 0% { transform: scale(1); } 35% { transform: scale(1.018); border-color: rgba(255, 230, 150, .46); } 100% { transform: scale(1); } }
     .hud-title { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
     .hud-water { display: block; margin-top: 2px; font-size: clamp(20px, 6vw, 30px); line-height: 1; font-weight: 750; font-variant-numeric: tabular-nums; }
     .hud-side { text-align: right; font-size: 12px; color: var(--soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
     .bottom-nav { position: fixed; z-index: 24; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 560px; margin: 0 auto; pointer-events: auto; }
-    .nav-button, .close-button, .utility, .upgrade { font: inherit; color: var(--text); border: 1px solid var(--line); background: rgba(8, 13, 20, 0.7); cursor: pointer; }
+    .nav-button, .close-button, .utility, .upgrade, .dev-button { font: inherit; color: var(--text); border: 1px solid var(--line); background: rgba(8, 13, 20, 0.7); cursor: pointer; }
     .nav-button { min-height: 48px; border-radius: 999px; box-shadow: 0 14px 36px rgba(0, 0, 0, 0.3); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 14px; font-weight: 650; }
     .nav-button[aria-expanded="true"] { background: rgba(42, 68, 92, 0.82); border-color: rgba(220, 238, 255, 0.34); }
     .sheet { position: fixed; z-index: 23; left: 10px; right: 10px; bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); max-width: 560px; max-height: min(58vh, 520px); margin: 0 auto; display: grid; gap: 10px; padding: 14px; overflow: auto; border: 1px solid rgba(210, 230, 245, 0.24); border-radius: 24px; color: var(--text); background: var(--glass-strong); box-shadow: 0 18px 56px rgba(0, 0, 0, 0.42); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); transform: translateY(calc(100% + 92px)); opacity: 0; pointer-events: none; transition: transform 220ms ease, opacity 220ms ease; }
@@ -27,20 +29,26 @@
     .value { font-variant-numeric: tabular-nums; color: var(--soft); text-align: right; }
     .upgrade, .utility { width: 100%; border-radius: 16px; padding: 12px 13px; text-align: left; background: rgba(255, 255, 255, 0.045); }
     .upgrade:disabled { opacity: 0.42; cursor: not-allowed; }
-    .upgrade strong { display: block; font-size: 14px; margin-bottom: 4px; }
+    .upgrade strong { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; margin-bottom: 4px; }
+    .level { color: rgba(235,246,255,.52); font-size: 12px; font-weight: 500; white-space: nowrap; }
     .upgrade span { display: block; font-size: 12px; color: var(--muted); line-height: 1.4; }
     .utility { text-align: center; color: var(--muted); font-size: 13px; }
     .toast { position: fixed; z-index: 30; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 76px); transform: translateX(-50%); max-width: min(460px, calc(100vw - 32px)); padding: 12px 16px; border-radius: 16px; background: rgba(10, 18, 28, 0.86); border: 1px solid rgba(220, 238, 255, 0.22); color: var(--text); box-shadow: 0 14px 42px rgba(0,0,0,.34); opacity: 0; pointer-events: none; transition: opacity .6s ease; }
     .toast.visible { opacity: 1; }
+    .dev-toggle { display: none; position: fixed; z-index: 32; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); border-radius: 999px; padding: 8px 10px; border: 1px solid rgba(255, 230, 150, .22); background: rgba(50, 38, 12, .72); color: rgba(255, 230, 150, .72); font: inherit; font-size: 12px; }
+    .dev-toggle.visible { display: block; }
+    .dev-panel { position: fixed; z-index: 33; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 116px); display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: min(340px, calc(100vw - 24px)); padding: 12px; border: 1px solid rgba(255, 230, 150, .22); border-radius: 18px; background: rgba(12, 10, 8, .9); box-shadow: 0 18px 56px rgba(0,0,0,.42); }
+    .dev-panel.open { display: grid; }
+    .dev-button { border-radius: 12px; padding: 9px; font-size: 12px; color: rgba(255, 238, 190, .86); background: rgba(255, 230, 150, .08); }
     .caption { display: none; }
-    @media (min-width: 820px) { .version { top: 16px; right: 18px; } .hud { top: 18px; left: 18px; right: auto; width: 280px; margin: 0; } .bottom-nav { left: auto; right: 18px; bottom: 18px; width: 320px; margin: 0; } .sheet { left: auto; right: 18px; bottom: 84px; width: 360px; max-height: min(68vh, 620px); margin: 0; } .caption { display: block; position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); color: rgba(230,242,255,.72); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; user-select: none; pointer-events: none; text-shadow: 0 2px 12px rgba(0,0,0,.5); } }
+    @media (min-width: 820px) { .version { top: 16px; right: 18px; } .hud { top: 18px; left: 18px; right: auto; width: 280px; margin: 0; } .bottom-nav { left: auto; right: 18px; bottom: 18px; width: 320px; margin: 0; } .sheet { left: auto; right: 18px; bottom: 84px; width: 360px; max-height: min(68vh, 620px); margin: 0; } .dev-toggle { right: 18px; bottom: 148px; } .dev-panel { right: 18px; bottom: 190px; } .caption { display: block; position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); color: rgba(230,242,255,.72); font-size: 14px; letter-spacing: .08em; text-transform: uppercase; user-select: none; pointer-events: none; text-shadow: 0 2px 12px rgba(0,0,0,.5); } }
   </style>
 </head>
 <body>
   <canvas id="rain" aria-label="Calm garden idle game"></canvas>
-  <div class="version" id="version">v0.4.0</div>
+  <div class="version" id="version">v0.4.1</div>
 
-  <section class="hud" aria-label="Garden summary">
+  <section class="hud" id="hud" aria-label="Garden summary">
     <div><span class="hud-title">Rain Garden</span><span class="hud-water" id="water">0</span></div>
     <div class="hud-side"><div id="rate">0/s</div><div id="stage">Seedbed</div></div>
   </section>
@@ -50,18 +58,31 @@
     <div class="stat"><span>Water</span><span class="value" id="waterDetail">0</span></div>
     <div class="stat"><span>Per second</span><span class="value" id="rateDetail">0/s</span></div>
     <div class="stat"><span>Garden</span><span class="value" id="stageDetail">Seedbed</span></div>
+    <div class="stat"><span>Next</span><span class="value" id="nextMilestone">Mossy Ground</span></div>
+    <div class="stat"><span>Progress</span><span class="value" id="milestoneProgress">0 / 100</span></div>
     <div class="stat"><span>Saved</span><span class="value" id="saved">now</span></div>
   </section>
 
   <section class="sheet" id="shopPanel" aria-label="Garden upgrades" aria-hidden="true">
     <div class="sheet-header"><h1 class="sheet-title">Upgrades</h1><button class="close-button" data-close="shopPanel" aria-label="Close upgrades">×</button></div>
-    <button class="upgrade" data-upgrade="clouds"><strong>More Clouds</strong><span>Rain falls more often. Cost: <b id="cloudsCost">25</b> water.</span></button>
-    <button class="upgrade" data-upgrade="ripples"><strong>Deeper Ripples</strong><span>Each landing gives more water. Cost: <b id="ripplesCost">60</b> water.</span></button>
-    <button class="upgrade" data-upgrade="mist"><strong>Mist Catcher</strong><span>Generates passive and offline water. Cost: <b id="mistCost">120</b> water.</span></button>
+    <button class="upgrade" data-upgrade="clouds"><strong>More Clouds <span class="level" id="cloudsLevel">Level 0</span></strong><span>Rain falls more often. Cost: <b id="cloudsCost">12</b> water.</span></button>
+    <button class="upgrade" data-upgrade="ripples"><strong>Deeper Ripples <span class="level" id="ripplesLevel">Level 0</span></strong><span>Each landing gives more water. Cost: <b id="ripplesCost">25</b> water.</span></button>
+    <button class="upgrade" data-upgrade="mist"><strong>Mist Catcher <span class="level" id="mistLevel">Level 0</span></strong><span>Generates passive and offline water. Cost: <b id="mistCost">50</b> water.</span></button>
     <button class="utility" id="reset">Reset garden</button>
   </section>
 
   <nav class="bottom-nav" aria-label="Game panels"><button class="nav-button" data-panel="statsPanel" aria-expanded="false">Stats</button><button class="nav-button" data-panel="shopPanel" aria-expanded="false">Upgrades</button></nav>
+  <button class="dev-toggle" id="devToggle" type="button">Dev</button>
+  <section class="dev-panel" id="devPanel" aria-label="Developer tools">
+    <button class="dev-button" data-dev="water100">+100 water</button>
+    <button class="dev-button" data-dev="water1000">+1k water</button>
+    <button class="dev-button" data-dev="nextMilestone">Next milestone</button>
+    <button class="dev-button" data-dev="golden">Force golden</button>
+    <button class="dev-button" data-dev="cloud">+1 Cloud</button>
+    <button class="dev-button" data-dev="ripple">+1 Ripple</button>
+    <button class="dev-button" data-dev="mist">+1 Mist</button>
+    <button class="dev-button" data-dev="reset">Reset save</button>
+  </section>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="caption">calm rain garden</div>
 
@@ -72,8 +93,16 @@
     const OFFLINE_CAP_SECONDS = 8 * 60 * 60;
     const AUTOSAVE_MS = 10000;
 
+    const upgradeNames = { clouds: 'More Clouds', ripples: 'Deeper Ripples', mist: 'Mist Catcher' };
+    const milestones = [
+      { name: 'Mossy Ground', value: 100 },
+      { name: 'Flowerbed', value: 1000 },
+      { name: 'Moon Pond', value: 10000 },
+      { name: 'Firefly Grove', value: 100000 }
+    ];
+
     const ui = {
-      water: document.getElementById('water'), waterDetail: document.getElementById('waterDetail'), rate: document.getElementById('rate'), rateDetail: document.getElementById('rateDetail'), stage: document.getElementById('stage'), stageDetail: document.getElementById('stageDetail'), saved: document.getElementById('saved'), toast: document.getElementById('toast'), reset: document.getElementById('reset'), panelButtons: [...document.querySelectorAll('[data-panel]')], panels: [...document.querySelectorAll('.sheet')], closeButtons: [...document.querySelectorAll('[data-close]')], buttons: [...document.querySelectorAll('.upgrade')], costs: { clouds: document.getElementById('cloudsCost'), ripples: document.getElementById('ripplesCost'), mist: document.getElementById('mistCost') }
+      hud: document.getElementById('hud'), water: document.getElementById('water'), waterDetail: document.getElementById('waterDetail'), rate: document.getElementById('rate'), rateDetail: document.getElementById('rateDetail'), stage: document.getElementById('stage'), stageDetail: document.getElementById('stageDetail'), nextMilestone: document.getElementById('nextMilestone'), milestoneProgress: document.getElementById('milestoneProgress'), saved: document.getElementById('saved'), toast: document.getElementById('toast'), reset: document.getElementById('reset'), devToggle: document.getElementById('devToggle'), devPanel: document.getElementById('devPanel'), devButtons: [...document.querySelectorAll('[data-dev]')], panelButtons: [...document.querySelectorAll('[data-panel]')], panels: [...document.querySelectorAll('.sheet')], closeButtons: [...document.querySelectorAll('[data-close]')], buttons: [...document.querySelectorAll('.upgrade')], costs: { clouds: document.getElementById('cloudsCost'), ripples: document.getElementById('ripplesCost'), mist: document.getElementById('mistCost') }, levels: { clouds: document.getElementById('cloudsLevel'), ripples: document.getElementById('ripplesLevel'), mist: document.getElementById('mistLevel') }
     };
 
     let width = 0, height = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -86,7 +115,7 @@
     const random = (min, max) => Math.random() * (max - min) + min;
     const landingY = () => random(height * 0.66, height * 0.98);
     const format = n => n < 1000 ? Math.floor(n).toString() : n < 1e6 ? (n / 1000).toFixed(1) + 'k' : n < 1e9 ? (n / 1e6).toFixed(1) + 'm' : (n / 1e9).toFixed(1) + 'b';
-    const costs = { clouds: () => Math.floor(35 * Math.pow(1.68, state.upgrades.clouds)), ripples: () => Math.floor(75 * Math.pow(1.74, state.upgrades.ripples)), mist: () => Math.floor(140 * Math.pow(1.86, state.upgrades.mist)) };
+    const costs = { clouds: () => Math.floor(12 * Math.pow(1.68, state.upgrades.clouds)), ripples: () => Math.floor(25 * Math.pow(1.74, state.upgrades.ripples)), mist: () => Math.floor(50 * Math.pow(1.86, state.upgrades.mist)) };
     const waterPerDrop = () => 1 + state.upgrades.ripples * 0.65;
     const passivePerSecond = () => state.upgrades.mist * 0.28;
     const dropInterval = () => Math.max(0.42, 3 * Math.pow(0.78, state.upgrades.clouds));
@@ -95,41 +124,59 @@
     function seededRandom(seed) { const x = Math.sin(seed) * 10000; return x - Math.floor(x); }
     function buildGardenDecorations() { mossPatches = Array.from({ length: 34 }, (_, index) => ({ x: seededRandom(index * 14.7 + 2) * width, y: height * (0.72 + seededRandom(index * 11.3 + 5) * 0.24), radius: 18 + seededRandom(index * 8.1 + 9) * 42, flatness: 0.22 + seededRandom(index * 4.8 + 3) * 0.18, phase: seededRandom(index * 5.2 + 1) * Math.PI * 2 })); flowers = Array.from({ length: 22 }, (_, index) => ({ x: seededRandom(index * 19.9 + 7) * width, y: height * (0.68 + seededRandom(index * 15.1 + 4) * 0.25), stem: 10 + seededRandom(index * 3.6 + 8) * 24, size: 3.5 + seededRandom(index * 2.7 + 6) * 4.5, phase: seededRandom(index * 6.1 + 3) * Math.PI * 2 })); ambientFireflies = Array.from({ length: 18 }, (_, index) => ({ x: seededRandom(index * 13.3 + 1) * width, y: height * (0.44 + seededRandom(index * 10.1 + 12) * 0.42), radius: 18 + seededRandom(index * 3.9 + 4) * 46, speed: 0.00035 + seededRandom(index * 7.7 + 8) * 0.00045, phase: seededRandom(index * 9.4 + 2) * Math.PI * 2, size: 1.1 + seededRandom(index * 5.8 + 11) * 1.9 })); }
     function milestoneLevel() { if (state.lifetimeWater >= 100000) return 4; if (state.lifetimeWater >= 10000) return 3; if (state.lifetimeWater >= 1000) return 2; if (state.lifetimeWater >= 100) return 1; return 0; }
+    function nextMilestone() { return milestones.find(m => state.lifetimeWater < m.value) || null; }
     function setOpenPanel(panelId) { for (const panel of ui.panels) { const open = panel.id === panelId && !panel.classList.contains('open'); panel.classList.toggle('open', open); panel.setAttribute('aria-hidden', String(!open)); } for (const button of ui.panelButtons) { const expanded = document.getElementById(button.dataset.panel).classList.contains('open'); button.setAttribute('aria-expanded', String(expanded)); } }
     function closePanel(panelId) { const panel = document.getElementById(panelId); panel.classList.remove('open'); panel.setAttribute('aria-hidden', 'true'); const button = ui.panelButtons.find(item => item.dataset.panel === panelId); if (button) button.setAttribute('aria-expanded', 'false'); }
     function showToast(message, duration = 4800) { ui.toast.textContent = message; ui.toast.classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => ui.toast.classList.remove('visible'), duration); }
+    function pulseHud() { ui.hud.classList.remove('pulse'); void ui.hud.offsetWidth; ui.hud.classList.add('pulse'); }
     function addWater(amount, trackRate = true) { state.water += amount; state.lifetimeWater += amount; if (trackRate) recentWater.push({ amount, time: performance.now() }); }
     function recentRate(now) { recentWater = recentWater.filter(entry => now - entry.time < 5000); return recentWater.reduce((sum, entry) => sum + entry.amount, 0) / 5 + passivePerSecond(); }
     function gardenStage() { if (state.lifetimeWater >= 100000) return 'Firefly Grove'; if (state.lifetimeWater >= 10000) return 'Moon Pond'; if (state.lifetimeWater >= 1000) return 'Flowerbed'; if (state.lifetimeWater >= 100) return 'Mossy Ground'; return 'Seedbed'; }
     function updateSavedLabel() { const seconds = Math.max(0, Math.floor((Date.now() - lastSavedAt) / 1000)); ui.saved.textContent = seconds < 5 ? 'now' : `${seconds}s ago`; }
-    function updateUI(now = performance.now()) { const water = format(state.water), rate = format(recentRate(now)) + '/s', stage = gardenStage(); ui.water.textContent = water; ui.waterDetail.textContent = water; ui.rate.textContent = rate; ui.rateDetail.textContent = rate; ui.stage.textContent = stage; ui.stageDetail.textContent = stage; updateSavedLabel(); for (const button of ui.buttons) { const key = button.dataset.upgrade, cost = costs[key](); ui.costs[key].textContent = format(cost); button.disabled = state.water < cost; } }
+
+    function updateUI(now = performance.now()) {
+      const water = format(state.water), rate = format(recentRate(now)) + '/s', stage = gardenStage(), next = nextMilestone();
+      ui.water.textContent = water; ui.waterDetail.textContent = water; ui.rate.textContent = rate; ui.rateDetail.textContent = rate; ui.stage.textContent = stage; ui.stageDetail.textContent = stage;
+      ui.nextMilestone.textContent = next ? `${next.name} at ${format(next.value)}` : 'Complete';
+      ui.milestoneProgress.textContent = next ? `${format(state.lifetimeWater)} / ${format(next.value)}` : `${format(state.lifetimeWater)} lifetime`;
+      updateSavedLabel();
+      for (const button of ui.buttons) { const key = button.dataset.upgrade, cost = costs[key](); ui.costs[key].textContent = format(cost); ui.levels[key].textContent = `Level ${state.upgrades[key]}`; button.disabled = state.water < cost; }
+    }
+
     function saveGame() { state.lastSavedAt = Date.now(); localStorage.setItem(SAVE_KEY, JSON.stringify(state)); lastSavedAt = state.lastSavedAt; }
     function loadGame() { try { const raw = localStorage.getItem(SAVE_KEY); if (!raw) return; const saved = JSON.parse(raw); if (!saved || typeof saved !== 'object') return; state.water = Number.isFinite(saved.water) ? Math.max(0, saved.water) : 0; state.lifetimeWater = Number.isFinite(saved.lifetimeWater) ? Math.max(state.water, saved.lifetimeWater) : state.water; state.upgrades = { clouds: Math.max(0, Number(saved.upgrades?.clouds) || 0), ripples: Math.max(0, Number(saved.upgrades?.ripples) || 0), mist: Math.max(0, Number(saved.upgrades?.mist) || 0) }; const savedAt = Number(saved.lastSavedAt) || Date.now(); const elapsedSeconds = Math.min(OFFLINE_CAP_SECONDS, Math.max(0, (Date.now() - savedAt) / 1000)); const offlineWater = passivePerSecond() * elapsedSeconds; if (offlineWater >= 1) { addWater(offlineWater, false); showToast(`While you were away, the garden gathered ${format(offlineWater)} water.`); } lastSavedAt = savedAt; } catch (error) { console.warn('Could not load save data:', error); showToast('Save data could not be loaded, so a fresh garden was started.'); } }
     function maybeAutoSave() { if (Date.now() - lastAutoSaveAt < AUTOSAVE_MS) return; saveGame(); lastAutoSaveAt = Date.now(); }
-    function buyUpgrade(key) { const cost = costs[key](); if (state.water < cost) return; state.water -= cost; state.upgrades[key] += 1; trimActiveDrops(); saveGame(); updateUI(); }
-    function resetGame() { if (!confirm('Reset your rain garden progress?')) return; state.water = 0; state.lifetimeWater = 0; state.upgrades = { clouds: 0, ripples: 0, mist: 0 }; recentWater = []; drops = []; dropSpawnTimer = 0; localStorage.removeItem(SAVE_KEY); saveGame(); showToast('The garden has been reset.'); updateUI(); }
+    function buyUpgrade(key) { const cost = costs[key](); if (state.water < cost) return; state.water -= cost; state.upgrades[key] += 1; trimActiveDrops(); saveGame(); updateUI(); pulseHud(); showToast(`${upgradeNames[key]} grew stronger.`); }
+    function resetGame(skipConfirm = false) { if (!skipConfirm && !confirm('Reset your rain garden progress?')) return; state.water = 0; state.lifetimeWater = 0; state.upgrades = { clouds: 0, ripples: 0, mist: 0 }; recentWater = []; drops = []; dropSpawnTimer = 0; localStorage.removeItem(SAVE_KEY); saveGame(); showToast('The garden has been reset.'); updateUI(); }
     function trimActiveDrops() { const max = maxActiveDrops(); if (drops.length > max) drops.length = max; }
     function resize() { dpr = Math.min(window.devicePixelRatio || 1, 2); width = window.innerWidth; height = window.innerHeight; canvas.width = Math.floor(width * dpr); canvas.height = Math.floor(height * dpr); canvas.style.width = width + 'px'; canvas.style.height = height + 'px'; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); mist = Array.from({ length: Math.max(10, Math.floor(width / 90)) }, createMist); buildGardenDecorations(); drops = []; dropSpawnTimer = 0; }
     function createDrop() { const depth = random(0.35, 1), impactY = landingY(); return { x: random(-width * .1, width * 1.1), y: random(-height * .18, -28), length: random(12, 34) * depth, speed: random(210, 460) * depth, drift: random(-22, -7) * depth, alpha: random(.14, .36) * depth, lineWidth: random(.6, 1.2) * depth, depth, impactY }; }
     function spawnDrops(delta) { dropSpawnTimer += delta; const interval = dropInterval(); const cap = maxActiveDrops(); while (dropSpawnTimer >= interval && drops.length < cap) { drops.push(createDrop()); dropSpawnTimer -= interval; } if (drops.length >= cap) dropSpawnTimer = Math.min(dropSpawnTimer, interval); }
     function createMist() { return { x: random(0, width), y: random(height * .58, height * .98), radius: random(90, 230), speed: random(3, 10), alpha: random(.01, .027) }; }
     function createRipple(x, y, strength = 1, warm = false) { ripples.push({ x, y, radius: 1, alpha: warm ? .3 : .18, growth: random(18, 42) * strength, stretch: random(1.45, 2.15), warm }); }
-    function maybeStartSpecial(delta) { if (special) return; specialCooldown -= delta; if (specialCooldown > 0) return; if (Math.random() < delta / 190) { special = { x: random(width * .15, width * .85), y: -80, impactY: landingY(), speed: random(160, 230), drift: random(-6, 6), length: 42, phase: 'falling', age: 0 }; specialCooldown = random(120, 240); } }
+    function maybeStartSpecial(delta) { if (special) return; specialCooldown -= delta; if (specialCooldown > 0) return; if (Math.random() < delta / 190) { forceGoldenDrop(); specialCooldown = random(120, 240); } }
+    function forceGoldenDrop() { special = { x: random(width * .15, width * .85), y: -80, impactY: landingY(), speed: random(160, 230), drift: random(-6, 6), length: 42, phase: 'falling', age: 0 }; }
     function drawBackground(time) { const pulse = .04 + Math.sin(time * .00018) * .015; const gradient = ctx.createRadialGradient(width * .5, height * .18, 0, width * .5, height * .22, Math.max(width, height)); gradient.addColorStop(0, `rgba(49, 74, 104, ${.88 + pulse})`); gradient.addColorStop(.42, 'rgba(17, 25, 35, .96)'); gradient.addColorStop(1, 'rgba(5, 8, 12, 1)'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, width, height); }
     function drawGarden(time) { const level = milestoneLevel(); if (level === 0) return; ctx.save(); if (level >= 1) { for (const moss of mossPatches) { const pulse = 0.85 + Math.sin(time * 0.001 + moss.phase) * 0.15; ctx.fillStyle = `rgba(80, 132, 100, ${0.075 * pulse})`; ctx.beginPath(); ctx.ellipse(moss.x, moss.y, moss.radius, moss.radius * moss.flatness, 0, 0, Math.PI * 2); ctx.fill(); } } if (level >= 3) { const pond = ctx.createRadialGradient(width * 0.5, height * 0.9, 0, width * 0.5, height * 0.9, Math.max(width, height) * 0.42); const shimmer = 0.1 + Math.sin(time * 0.0007) * 0.035; pond.addColorStop(0, `rgba(118, 178, 202, ${shimmer})`); pond.addColorStop(0.55, 'rgba(80, 130, 160, 0.045)'); pond.addColorStop(1, 'rgba(80, 130, 160, 0)'); ctx.fillStyle = pond; ctx.beginPath(); ctx.ellipse(width * 0.5, height * 0.9, width * 0.46, height * 0.18, 0, 0, Math.PI * 2); ctx.fill(); } if (level >= 2) { for (const flower of flowers) { const sway = Math.sin(time * 0.0012 + flower.phase) * 2.2; ctx.strokeStyle = 'rgba(112, 168, 126, 0.28)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(flower.x, flower.y); ctx.quadraticCurveTo(flower.x + sway, flower.y - flower.stem * 0.55, flower.x + sway * 1.4, flower.y - flower.stem); ctx.stroke(); const bloomX = flower.x + sway * 1.4, bloomY = flower.y - flower.stem; ctx.fillStyle = 'rgba(218, 230, 255, 0.2)'; ctx.beginPath(); ctx.arc(bloomX, bloomY, flower.size, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = 'rgba(255, 227, 155, 0.24)'; ctx.beginPath(); ctx.arc(bloomX, bloomY, flower.size * 0.42, 0, Math.PI * 2); ctx.fill(); } } if (level >= 4) { for (const fly of ambientFireflies) { const angle = time * fly.speed + fly.phase; const x = fly.x + Math.cos(angle) * fly.radius; const y = fly.y + Math.sin(angle * 0.8) * fly.radius * 0.38; const alpha = 0.22 + Math.sin(time * 0.003 + fly.phase) * 0.16; ctx.fillStyle = `rgba(255, 230, 150, ${Math.max(0.06, alpha)})`; ctx.beginPath(); ctx.arc(x, y, fly.size, 0, Math.PI * 2); ctx.fill(); } } ctx.restore(); }
     function drawMist(delta) { for (const cloud of mist) { cloud.x += cloud.speed * delta; if (cloud.x - cloud.radius > width) { cloud.x = -cloud.radius; cloud.y = random(height * .58, height * .98); } const gradient = ctx.createRadialGradient(cloud.x, cloud.y, 0, cloud.x, cloud.y, cloud.radius); gradient.addColorStop(0, `rgba(180, 210, 230, ${cloud.alpha})`); gradient.addColorStop(1, 'rgba(180, 210, 230, 0)'); ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2); ctx.fill(); } }
     function drawDrops(delta) { ctx.lineCap = 'round'; for (let i = drops.length - 1; i >= 0; i--) { const drop = drops[i]; const previousY = drop.y, previousX = drop.x; drop.x += drop.drift * delta; drop.y += drop.speed * delta; if (previousY < drop.impactY && drop.y >= drop.impactY) { const t = (drop.impactY - previousY) / Math.max(drop.y - previousY, .001); const impactX = previousX + (drop.x - previousX) * t; addWater(waterPerDrop()); createRipple(impactX, drop.impactY, .75 + drop.depth * .7); drops.splice(i, 1); continue; } if (drop.y > height + 80 || drop.x < -160 || drop.x > width + 160) { drops.splice(i, 1); continue; } const gradient = ctx.createLinearGradient(drop.x, drop.y - drop.length, drop.x + drop.drift * .04, drop.y); gradient.addColorStop(0, 'rgba(205, 226, 242, 0)'); gradient.addColorStop(.45, `rgba(205, 226, 242, ${drop.alpha})`); gradient.addColorStop(1, 'rgba(205, 226, 242, 0)'); ctx.strokeStyle = gradient; ctx.lineWidth = drop.lineWidth; ctx.beginPath(); ctx.moveTo(drop.x, drop.y - drop.length); ctx.lineTo(drop.x + drop.drift * .055, drop.y); ctx.stroke(); } }
     function drawRipples(delta) { for (let i = ripples.length - 1; i >= 0; i--) { const ripple = ripples[i]; ripple.radius += ripple.growth * delta; ripple.alpha -= (ripple.warm ? .07 : .12) * delta; if (ripple.alpha <= 0) { ripples.splice(i, 1); continue; } ctx.strokeStyle = ripple.warm ? `rgba(255, 219, 139, ${ripple.alpha})` : `rgba(185, 210, 230, ${ripple.alpha})`; ctx.lineWidth = ripple.warm ? 1.4 : 1; ctx.beginPath(); ctx.ellipse(ripple.x, ripple.y, ripple.radius * ripple.stretch, ripple.radius * .45, 0, 0, Math.PI * 2); ctx.stroke(); } }
-    function drawSpecial(delta) { maybeStartSpecial(delta); if (!special) return; special.age += delta; if (special.phase === 'falling') { const previousY = special.y; special.x += special.drift * delta; special.y += special.speed * delta; const trail = ctx.createLinearGradient(special.x, special.y - special.length, special.x, special.y); trail.addColorStop(0, 'rgba(255, 231, 158, 0)'); trail.addColorStop(.55, 'rgba(255, 231, 158, .9)'); trail.addColorStop(1, 'rgba(255, 255, 220, .1)'); ctx.strokeStyle = trail; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(special.x, special.y - special.length); ctx.lineTo(special.x + special.drift * .08, special.y); ctx.stroke(); if (previousY < special.impactY && special.y >= special.impactY) { addWater(waterPerDrop() * 90); special.phase = 'bloom'; special.age = 0; special.y = special.impactY; for (let i = 0; i < 5; i++) createRipple(special.x, special.y, 1.1 + i * .34, true); sparks = Array.from({ length: 18 }, () => ({ x: special.x, y: special.y, vx: random(-24, 24), vy: random(-52, -18), life: random(2.5, 4.8), age: 0, size: random(1.3, 2.8) })); } return; } const life = 5.5, fade = Math.max(0, 1 - special.age / life), glowRadius = 70 + special.age * 22; const glow = ctx.createRadialGradient(special.x, special.y, 0, special.x, special.y, glowRadius); glow.addColorStop(0, `rgba(255, 224, 150, ${.22 * fade})`); glow.addColorStop(1, 'rgba(255, 224, 150, 0)'); ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(special.x, special.y, glowRadius, 0, Math.PI * 2); ctx.fill(); for (let i = sparks.length - 1; i >= 0; i--) { const spark = sparks[i]; spark.age += delta; spark.x += spark.vx * delta; spark.y += spark.vy * delta; spark.vy += 9 * delta; const alpha = Math.max(0, 1 - spark.age / spark.life) * .75; ctx.fillStyle = `rgba(255, 230, 150, ${alpha})`; ctx.beginPath(); ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2); ctx.fill(); if (spark.age >= spark.life) sparks.splice(i, 1); } if (special.age >= life) { special = null; sparks = []; } }
+    function drawSpecial(delta) { maybeStartSpecial(delta); if (!special) return; special.age += delta; if (special.phase === 'falling') { const previousY = special.y; special.x += special.drift * delta; special.y += special.speed * delta; const trail = ctx.createLinearGradient(special.x, special.y - special.length, special.x, special.y); trail.addColorStop(0, 'rgba(255, 231, 158, 0)'); trail.addColorStop(.55, 'rgba(255, 231, 158, .9)'); trail.addColorStop(1, 'rgba(255, 255, 220, .1)'); ctx.strokeStyle = trail; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(special.x, special.y - special.length); ctx.lineTo(special.x + special.drift * .08, special.y); ctx.stroke(); if (previousY < special.impactY && special.y >= special.impactY) { addWater(waterPerDrop() * 90); pulseHud(); special.phase = 'bloom'; special.age = 0; special.y = special.impactY; for (let i = 0; i < 5; i++) createRipple(special.x, special.y, 1.1 + i * .34, true); sparks = Array.from({ length: 18 }, () => ({ x: special.x, y: special.y, vx: random(-24, 24), vy: random(-52, -18), life: random(2.5, 4.8), age: 0, size: random(1.3, 2.8) })); } return; } const life = 5.5, fade = Math.max(0, 1 - special.age / life), glowRadius = 70 + special.age * 22; const glow = ctx.createRadialGradient(special.x, special.y, 0, special.x, special.y, glowRadius); glow.addColorStop(0, `rgba(255, 224, 150, ${.22 * fade})`); glow.addColorStop(1, 'rgba(255, 224, 150, 0)'); ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(special.x, special.y, glowRadius, 0, Math.PI * 2); ctx.fill(); for (let i = sparks.length - 1; i >= 0; i--) { const spark = sparks[i]; spark.age += delta; spark.x += spark.vx * delta; spark.y += spark.vy * delta; spark.vy += 9 * delta; const alpha = Math.max(0, 1 - spark.age / spark.life) * .75; ctx.fillStyle = `rgba(255, 230, 150, ${alpha})`; ctx.beginPath(); ctx.arc(spark.x, spark.y, spark.size, 0, Math.PI * 2); ctx.fill(); if (spark.age >= spark.life) sparks.splice(i, 1); } if (special.age >= life) { special = null; sparks = []; } }
     function drawWindowGlow(time) { const shimmer = .06 + Math.sin(time * .0005) * .025; const glow = ctx.createLinearGradient(0, 0, 0, height); glow.addColorStop(0, `rgba(170, 205, 235, ${shimmer})`); glow.addColorStop(.5, 'rgba(170, 205, 235, .015)'); glow.addColorStop(1, 'rgba(170, 205, 235, .03)'); ctx.fillStyle = glow; ctx.fillRect(0, 0, width, height); }
+    function handleDev(action) { if (action === 'water100') addWater(100); if (action === 'water1000') addWater(1000); if (action === 'nextMilestone') { const next = nextMilestone(); if (next) addWater(Math.max(0, next.value - state.lifetimeWater)); } if (action === 'golden') forceGoldenDrop(); if (action === 'cloud') state.upgrades.clouds += 1; if (action === 'ripple') state.upgrades.ripples += 1; if (action === 'mist') state.upgrades.mist += 1; if (action === 'reset') resetGame(true); trimActiveDrops(); saveGame(); updateUI(); pulseHud(); if (action !== 'reset') showToast('Dev change applied.'); }
+    function enableDevToolsIfRequested() { const params = new URLSearchParams(window.location.search); if (!params.has('dev') && window.location.hash !== '#dev') return; ui.devToggle.classList.add('visible'); showToast('Dev tools enabled.'); }
+
     let last = performance.now();
     function animate(now) { const delta = Math.min((now - last) / 1000, .033); last = now; addWater(passivePerSecond() * delta); spawnDrops(delta); drawBackground(now); drawWindowGlow(now); drawMist(delta); drawGarden(now); drawDrops(delta); drawSpecial(delta); drawRipples(delta); updateUI(now); maybeAutoSave(); requestAnimationFrame(animate); }
+
     ui.buttons.forEach(button => button.addEventListener('click', () => buyUpgrade(button.dataset.upgrade)));
     ui.panelButtons.forEach(button => button.addEventListener('click', () => setOpenPanel(button.dataset.panel)));
     ui.closeButtons.forEach(button => button.addEventListener('click', () => closePanel(button.dataset.close)));
-    ui.reset.addEventListener('click', resetGame);
+    ui.devToggle.addEventListener('click', () => ui.devPanel.classList.toggle('open'));
+    ui.devButtons.forEach(button => button.addEventListener('click', () => handleDev(button.dataset.dev)));
+    ui.reset.addEventListener('click', () => resetGame());
     window.addEventListener('resize', resize, { passive: true }); window.addEventListener('pagehide', saveGame); document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
-    loadGame(); resize(); updateUI(); saveGame(); requestAnimationFrame(animate);
+    loadGame(); resize(); updateUI(); enableDevToolsIfRequested(); saveGame(); requestAnimationFrame(animate);
   </script>
 </body>
 </html>
